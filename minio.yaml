@@ -1,0 +1,44 @@
+version: "3.7"
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    command: server /data --console-address ":9001"
+    networks:
+      - ${MINHA_REDE}
+    volumes:
+      - minio_data:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_PASSWORD}
+      - MINIO_BROWSER_REDIRECT_URL=https://${MINIO_BASE_URL}
+      - MINIO_SERVER_URL=https://${MINIO_S3_URL}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.minio_public.rule=Host(`${MINIO_S3_URL}`)
+        - traefik.http.routers.minio_public.entrypoints=websecure
+        - traefik.http.routers.minio_public.tls.certresolver=letsencryptresolver
+        - traefik.http.services.minio_public.loadbalancer.server.port=9000
+        - traefik.http.services.minio_public.loadbalancer.passHostHeader=true
+        - traefik.http.routers.minio_public.service=minio_public
+        - traefik.http.routers.minio_console.rule=Host(`${MINIO_BASE_URL}`)
+        - traefik.http.routers.minio_console.entrypoints=websecure
+        - traefik.http.routers.minio_console.tls.certresolver=letsencryptresolver
+        - traefik.http.services.minio_console.loadbalancer.server.port=9001
+        - traefik.http.services.minio_console.loadbalancer.passHostHeader=true
+        - traefik.http.routers.minio_console.service=minio_console
+volumes:
+  minio_data:
+    external: true
+    name: minio_data
+
+networks:
+  ${MINHA_REDE}:
+    external: true
+    name: ${MINHA_REDE}
