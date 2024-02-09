@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - ${MINHA_REDE}
+    #ports:
+    #  - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1024M
+
+volumes:
+  postgres_data:
+    external: true
+    name: postgres_data
+
+networks:
+  ${MINHA_REDE}:
+    external: true
+    name: ${MINHA_REDE}
